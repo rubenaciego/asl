@@ -142,7 +142,8 @@ antlrcpp::Any TypeCheckVisitor::visitIfStmt(AslParser::IfStmtContext *ctx) {
   TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
   if ((not Types.isErrorTy(t1)) and (not Types.isBooleanTy(t1)))
     Errors.booleanRequired(ctx);
-  visit(ctx->statements());
+  visit(ctx->ifstmt);
+  visit(ctx->elsestmt)
   DEBUG_EXIT();
   return 0;
 }
@@ -201,6 +202,52 @@ antlrcpp::Any TypeCheckVisitor::visitLeft_expr(AslParser::Left_exprContext *ctx)
   return 0;
 }
 
+antlrcpp::Any TypeCheckVisitor::visitIndexing(AslParser::IndexingContext *ctx) {
+  DEBUG_ENTER();
+  visit(ctx->expr(0));
+  TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(0));
+  visit(ctx->expr(1));
+  TypesMgr::TypeId t2 = getTypeDecor(ctx->expr(1));
+  TypesMgr::TypeId t;
+
+  if ((not Types.isErrorTy(t2)) and (not Types.isIntegerTy(t2)))
+      Errors.nonIntegerIndexInArrayAccess(ctx->expr(1));
+
+  if ((not Types.isErrorTy(t1)) and (not Types.isArrayTy(t1))) {
+    Errors.nonArrayInArrayAccess(ctx);
+    t = Types.createErrorTy();
+  }
+  
+  bool lvalue = getIsLValueDecor(ctx->expr(0));
+  t = Types.getArrayElemType(t1);
+  putTypeDecor(ctx, t);
+  putIsLValueDecor(ctx, lvalue);
+
+  DEBUG_EXIT();
+  return 0;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitUnary(AslParser::UnaryContext *ctx) {
+  DEBUG_ENTER();
+  visit(ctx->expr());
+  TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
+  
+  if (Types.isNumericTy(t1)) {
+
+  }
+  else if (Types.isBooleanTy(t1)) {
+
+  }
+  else if(not Types.isErrorTy(t1))
+    Errors.incompatibleOperator(ctx->op);
+  
+  TypesMgr::TypeId t = Types.createIntegerTy();
+  putTypeDecor(ctx, t);
+  putIsLValueDecor(ctx, false);
+  DEBUG_EXIT();
+  return 0;  
+}
+
 antlrcpp::Any TypeCheckVisitor::visitArithmetic(AslParser::ArithmeticContext *ctx) {
   DEBUG_ENTER();
   visit(ctx->expr(0));
@@ -233,6 +280,9 @@ antlrcpp::Any TypeCheckVisitor::visitRelational(AslParser::RelationalContext *ct
   DEBUG_EXIT();
   return 0;
 }
+
+//antlrcpp::Any TypeCheckVisitor::visitLogical(AslParser::LogicalContext *ctx);
+//antlrcpp::Any TypeCheckVisitor::visitNested(AslParser::NestedContext *ctx);
 
 antlrcpp::Any TypeCheckVisitor::visitValue(AslParser::ValueContext *ctx) {
   DEBUG_ENTER();

@@ -157,7 +157,7 @@ CPPFLAGS += -Wall -Wextra
 # ... but disable these ones,
 CPPFLAGS += -Wno-unused-parameter -Wno-attributes
 # ... always add extra debugging information for gdb.
-#CPPFLAGS += -g
+CPPFLAGS += -g
 
 
 # Tell the compiler to link the antlr4 runtime library to the program

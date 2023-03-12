@@ -49,7 +49,17 @@ variable_decl
         : VAR ID ':' type
         ;
 
-type    : INT
+type    : basic_type
+        | array
+        ;
+
+basic_type
+        : INT
+        | FLOAT
+        | BOOL
+        | CHAR
+        ;
+array   : ARRAY INTVAL 'of' basic_type
         ;
 
 statements
@@ -61,7 +71,7 @@ statement
           // Assignment
         : left_expr ASSIGN expr ';'           # assignStmt
           // if-then-else statement (else is optional)
-        | IF expr THEN statements ENDIF       # ifStmt
+        | IF expr THEN ifstmt=statements (ELSE elsestmt=statements)? ENDIF       # ifStmt
           // A function/procedure call has a list of arguments in parenthesis (possibly empty)
         | ident '(' ')' ';'                   # procCall
           // Read a variable
@@ -78,10 +88,20 @@ left_expr
         ;
 
 // Grammar for expressions with boolean, relational and aritmetic operators
-expr    : expr op=MUL expr                    # arithmetic
-        | expr op=PLUS expr                   # arithmetic
-        | expr op=EQUAL expr                  # relational
+expr    : expr '[' expr ']'                   # indexing
+        | op=(NOT|PLUS|SUB) expr              # unary
+        | expr op=(MUL|DIV|MOD) expr          # arithmetic
+        | expr op=(PLUS|SUB) expr             # arithmetic
+        | expr op=(EQUAL|NEQUAL
+                |GREATER|GREATEREQ
+                |LOWER|LOWERERQ) expr         # relational
+        | expr op=AND expr                    # logical
+        | expr op=OR expr                     # logical
+        | '(' expr ')'                        # nested
         | INTVAL                              # value
+        | FLOATVAL                            # value
+        | BOOLVAL                             # value
+        | CHARVAL                             # value
         | ident                               # exprIdent
         ;
 
@@ -95,10 +115,25 @@ ident   : ID
 
 ASSIGN    : '=' ;
 EQUAL     : '==' ;
+NEQUAL    : '!=' ;
+GREATER   : '>' ;
+GREATEREQ : '>=' ;
+LOWER     : '<' ;
+LOWERERQ  : '<=' ;
 PLUS      : '+' ;
-MUL       : '*';
-VAR       : 'var';
-INT       : 'int';
+SUB       : '-' ;
+NOT       : 'not' ;
+MUL       : '*' ;
+DIV       : '/' ;
+MOD       : '%' ;
+AND       : 'and' ;
+OR        : 'or' ;
+VAR       : 'var' ;
+ARRAY     : 'array' ;
+INT       : 'int' ;
+FLOAT     : 'float' ;
+BOOL      : 'bool' ;
+CHAR      : 'char' ;
 IF        : 'if' ;
 THEN      : 'then' ;
 ELSE      : 'else' ;
@@ -109,6 +144,9 @@ READ      : 'read' ;
 WRITE     : 'write' ;
 ID        : ('a'..'z'|'A'..'Z') ('a'..'z'|'A'..'Z'|'_'|'0'..'9')* ;
 INTVAL    : ('0'..'9')+ ;
+FLOATVAL  : ('0'..'9')+ '.' ('0'..'9')+ ;
+BOOLVAL   : ('true'|'false');
+CHARVAL   : '\'' ( ESC_SEQ | ~('\\'|'\'') ) '\'' ;
 
 // Strings (in quotes) with escape sequences
 STRING    : '"' ( ESC_SEQ | ~('\\'|'"') )* '"' ;
