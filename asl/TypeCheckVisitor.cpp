@@ -143,7 +143,25 @@ antlrcpp::Any TypeCheckVisitor::visitIfStmt(AslParser::IfStmtContext *ctx) {
   if ((not Types.isErrorTy(t1)) and (not Types.isBooleanTy(t1)))
     Errors.booleanRequired(ctx);
   visit(ctx->ifstmt);
-  visit(ctx->elsestmt)
+  if (ctx->elsestmt) visit(ctx->elsestmt);
+  DEBUG_EXIT();
+  return 0;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitWhileStmt(AslParser::WhileStmtContext *ctx) {
+  DEBUG_ENTER();
+  visit(ctx->expr());
+  TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
+  if ((not Types.isErrorTy(t1)) and (not Types.isBooleanTy(t1)))
+    Errors.booleanRequired(ctx);
+  visit(ctx->statements());
+  DEBUG_EXIT();
+  return 0;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitReturn(AslParser::ReturnContext *ctx) {
+  DEBUG_ENTER();
+  if (ctx->expr()) visit(ctx->expr());
   DEBUG_EXIT();
   return 0;
 }
@@ -249,21 +267,19 @@ antlrcpp::Any TypeCheckVisitor::visitArithmetic(AslParser::ArithmeticContext *ct
   TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(0));
   visit(ctx->expr(1));
   TypesMgr::TypeId t2 = getTypeDecor(ctx->expr(1));
-  TypesMgr::TypeId t;
+  TypesMgr::TypeId t = Types.createIntegerTy();
 
-  if (((not Types.isErrorTy(t1)) and (not Types.isNumericTy(t1))) or
-      ((not Types.isErrorTy(t2)) and (not Types.isNumericTy(t2))) or
-      (ctx->MOD() and not (Types.isIntegerTy(t1) and Types.isIntegerTy(t2))))
-  {
-    Errors.incompatibleOperator(ctx->op);
-    t = Types.isErrorTy(t1) ? t2 : t1;
+  if (ctx->MOD()) {
+    if (((not Types.isErrorTy(t1)) and (not Types.isIntegerTy(t1))) or
+       ((not Types.isErrorTy(t2)) and (not Types.isIntegerTy(t2))))
+      Errors.incompatibleOperator(ctx->op);
   }
   else
   {
-    if (Types.isIntegerTy(t1) and Types.isIntegerTy(t2))
-      t = Types.createIntegerTy();
-    else
-      t = Types.createFloatTy();
+    if (((not Types.isErrorTy(t1)) and (not Types.isNumericTy(t1))) or
+        ((not Types.isErrorTy(t2)) and (not Types.isNumericTy(t2))))
+      Errors.incompatibleOperator(ctx->op);
+    if (Types.isFloatTy(t1) or Types.isFloatTy(t2)) t = Types.createFloatTy();
   }
 
   putTypeDecor(ctx, t);
