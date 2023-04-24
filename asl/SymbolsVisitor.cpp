@@ -79,6 +79,8 @@ antlrcpp::Any SymbolsVisitor::visitFunction(AslParser::FunctionContext *ctx) {
   std::string funcName = ctx->ID()->getText();
   SymTable::ScopeId sc = Symbols.pushNewScope(funcName);
   putScopeDecor(ctx, sc);
+  for (auto param : ctx->params) visit(param);
+  if (ctx->type()) visit(ctx->type());
   visit(ctx->declarations());
   // Symbols.print();
   Symbols.popScope();
@@ -88,7 +90,12 @@ antlrcpp::Any SymbolsVisitor::visitFunction(AslParser::FunctionContext *ctx) {
   }
   else {
     std::vector<TypesMgr::TypeId> lParamsTy;
-    TypesMgr::TypeId tRet = Types.createVoidTy();
+    for (auto param : ctx->params)
+    {
+      TypesMgr::TypeId t = getTypeDecor(param);
+      lParamsTy.push_back(t);
+    }
+    TypesMgr::TypeId tRet = ctx->type() ? getTypeDecor(ctx->type()) : Types.createVoidTy();
     TypesMgr::TypeId tFunc = Types.createFunctionTy(lParamsTy, tRet);
     Symbols.addFunction(ident, tFunc);
   }

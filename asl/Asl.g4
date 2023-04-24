@@ -38,15 +38,15 @@ program : function+ EOF
 
 // A function has a name, a list of parameters and a list of statements
 function
-        : FUNC ID '(' ')' declarations statements ENDFUNC
+        : FUNC ID '(' (params+=variable_decl (',' params+=variable_decl)*)? ')' (':' type)? declarations statements ENDFUNC
         ;
 
 declarations
-        : (variable_decl)*
+        : (VAR variable_decl)*
         ;
 
 variable_decl
-        : VAR ID (',' ID)* ':' type
+        : ID (',' ID)* ':' type
         ;
 
 type    : basic_type
