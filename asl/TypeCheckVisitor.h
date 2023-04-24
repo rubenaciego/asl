@@ -79,8 +79,8 @@ public:
   antlrcpp::Any visitUnary(AslParser::UnaryContext *ctx);
   antlrcpp::Any visitArithmetic(AslParser::ArithmeticContext *ctx);
   antlrcpp::Any visitRelational(AslParser::RelationalContext *ctx);
-  //antlrcpp::Any visitLogical(AslParser::LogicalContext *ctx);
-  //antlrcpp::Any visitNested(AslParser::NestedContext *ctx);
+  antlrcpp::Any visitLogical(AslParser::LogicalContext *ctx);
+  antlrcpp::Any visitNested(AslParser::NestedContext *ctx);
   antlrcpp::Any visitValue(AslParser::ValueContext *ctx);
   antlrcpp::Any visitIdent(AslParser::IdentContext *ctx);
 
