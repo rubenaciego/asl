@@ -175,6 +175,9 @@ antlrcpp::Any TypeCheckVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
   } else if (not Types.isFunctionTy(t1)) {
     Errors.isNotCallable(ctx->ident());
   }
+  else {
+    visitParameters(ctx->expr(), t1, ctx);
+  }
   DEBUG_EXIT();
   return 0;
 }
@@ -192,10 +195,36 @@ antlrcpp::Any TypeCheckVisitor::visitFunCall(AslParser::FunCallContext *ctx)
   }
   else {
     t = Types.getFuncReturnType(t1);
+    visitParameters(ctx->expr(), t1, ctx);
   }
 
   putTypeDecor(ctx, t);
   putIsLValueDecor(ctx, false);
+  DEBUG_EXIT();
+  return 0;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitParameters(const std::vector<AslParser::ExprContext*>& params,
+  TypesMgr::TypeId ftype, antlr4::ParserRuleContext* ctx)
+{
+  DEBUG_ENTER();
+  const std::vector<TypesMgr::TypeId>& paramTypes = Types.getFuncParamsTypes(ftype);
+
+  if (paramTypes.size() != params.size())
+    Errors.numberOfParameters(ctx);
+  else
+  {
+    for (size_t i = 0; i < params.size(); ++i)
+    {
+      visit(params[i]);
+      TypesMgr::TypeId expected = paramTypes[i];
+      TypesMgr::TypeId actual = getTypeDecor(params[i]);
+
+      if (!Types.equalTypes(expected, actual))
+        Errors.incompatibleParameter(params[i], i + 1, ctx);
+    }
+  }
+
   DEBUG_EXIT();
   return 0;
 }

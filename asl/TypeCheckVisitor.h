@@ -88,6 +88,9 @@ public:
   antlrcpp::Any visitValue(AslParser::ValueContext *ctx);
   antlrcpp::Any visitIdent(AslParser::IdentContext *ctx);
 
+  antlrcpp::Any visitParameters(const std::vector<AslParser::ExprContext*>& params,
+    TypesMgr::TypeId ftype, antlr4::ParserRuleContext* ctx);
+
 private:
 
   // Attributes
