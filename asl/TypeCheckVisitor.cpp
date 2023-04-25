@@ -87,6 +87,17 @@ antlrcpp::Any TypeCheckVisitor::visitFunction(AslParser::FunctionContext *ctx) {
   SymTable::ScopeId sc = getScopeDecor(ctx);
   Symbols.pushThisScope(sc);
   // Symbols.print();
+
+  std::vector<TypesMgr::TypeId> lParamsTy;
+  for (auto param : ctx->params)
+  {
+    TypesMgr::TypeId t = getTypeDecor(param->type());
+    lParamsTy.push_back(t);
+  }
+  TypesMgr::TypeId tRet = ctx->basic_type() ? getTypeDecor(ctx->basic_type()) : Types.createVoidTy();
+  TypesMgr::TypeId tFunc = Types.createFunctionTy(lParamsTy, tRet);
+  setCurrentFunctionTy(tFunc);
+
   visit(ctx->statements());
   Symbols.popScope();
   DEBUG_EXIT();
@@ -127,11 +138,13 @@ antlrcpp::Any TypeCheckVisitor::visitAssignStmt(AslParser::AssignStmtContext *ct
   visit(ctx->expr());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->left_expr());
   TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
+
   if ((not Types.isErrorTy(t1)) and (not Types.isErrorTy(t2)) and
       (not Types.copyableTypes(t1, t2)))
     Errors.incompatibleAssignment(ctx->ASSIGN());
   if ((not Types.isErrorTy(t1)) and (not getIsLValueDecor(ctx->left_expr())))
     Errors.nonReferenceableLeftExpr(ctx->left_expr());
+
   DEBUG_EXIT();
   return 0;
 }
@@ -161,14 +174,28 @@ antlrcpp::Any TypeCheckVisitor::visitWhileStmt(AslParser::WhileStmtContext *ctx)
 
 antlrcpp::Any TypeCheckVisitor::visitReturn(AslParser::ReturnContext *ctx) {
   DEBUG_ENTER();
-  if (ctx->expr()) visit(ctx->expr());
+  TypesMgr::TypeId t;
+  TypesMgr::TypeId fType = getCurrentFunctionTy();
+  TypesMgr::TypeId retType = Types.getFuncReturnType(fType);
+  if (ctx->expr())
+  {
+    visit(ctx->expr());
+    t = getTypeDecor(ctx->expr());
+  }
+  else
+    t = Types.createVoidTy();
+
+  if ((not Types.isErrorTy(t)) and (not Types.isErrorTy(retType)) and
+      (not Types.copyableTypes(retType, t)))
+    Errors.incompatibleReturn(ctx->RETURN());
+  
   DEBUG_EXIT();
   return 0;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
   DEBUG_ENTER();
-  visit(ctx->ident());
+  visitChildren(ctx);
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
   if (Types.isErrorTy(t1)) {
     ;
@@ -185,7 +212,7 @@ antlrcpp::Any TypeCheckVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
 antlrcpp::Any TypeCheckVisitor::visitFunCall(AslParser::FunCallContext *ctx)
 {
   DEBUG_ENTER();
-  visit(ctx->ident());
+  visitChildren(ctx);
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
   TypesMgr::TypeId t = Types.createErrorTy();
   if (Types.isErrorTy(t1)) {
@@ -194,7 +221,13 @@ antlrcpp::Any TypeCheckVisitor::visitFunCall(AslParser::FunCallContext *ctx)
     Errors.isNotCallable(ctx->ident());
   }
   else {
-    t = Types.getFuncReturnType(t1);
+    if (Types.isVoidFunction(t1))
+    {
+      t = Types.createErrorTy();
+      Errors.isNotFunction(ctx->ident());
+    }
+    else t = Types.getFuncReturnType(t1);
+
     visitParameters(ctx->expr(), t1, ctx);
   }
 
@@ -216,11 +249,10 @@ antlrcpp::Any TypeCheckVisitor::visitParameters(const std::vector<AslParser::Exp
   {
     for (size_t i = 0; i < params.size(); ++i)
     {
-      visit(params[i]);
       TypesMgr::TypeId expected = paramTypes[i];
       TypesMgr::TypeId actual = getTypeDecor(params[i]);
 
-      if (!Types.equalTypes(expected, actual))
+      if (!Types.isErrorTy(expected) && ! Types.isErrorTy(actual) && !Types.copyableTypes(expected, actual))
         Errors.incompatibleParameter(params[i], i + 1, ctx);
     }
   }
@@ -263,9 +295,9 @@ antlrcpp::Any TypeCheckVisitor::visitLeftIdent(AslParser::LeftIdentContext *ctx)
   DEBUG_ENTER();
   visit(ctx->ident());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
+  bool lvalue = getIsLValueDecor(ctx->ident());
   putTypeDecor(ctx, t1);
-  bool b = getIsLValueDecor(ctx->ident());
-  putIsLValueDecor(ctx, b);
+  putIsLValueDecor(ctx, lvalue);
   DEBUG_EXIT();
   return 0;
 }
@@ -285,13 +317,27 @@ antlrcpp::Any TypeCheckVisitor::visitLeftIndexing(AslParser::LeftIndexingContext
     Errors.nonArrayInArrayAccess(ctx);
     t = Types.createErrorTy();
   }
-  else
+  else if (Types.isArrayTy(t1))
     t = Types.getArrayElemType(t1);
+  else
+    t = Types.createErrorTy();
   
   bool lvalue = getIsLValueDecor(ctx->left_expr());
   putTypeDecor(ctx, t);
   putIsLValueDecor(ctx, lvalue);
 
+  DEBUG_EXIT();
+  return 0;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitLeftNested(AslParser::LeftNestedContext *ctx)
+{
+  DEBUG_ENTER();
+  visit(ctx->left_expr());
+  TypesMgr::TypeId t = getTypeDecor(ctx->left_expr());
+  bool lvalue = getIsLValueDecor(ctx->left_expr());
+  putTypeDecor(ctx, t);
+  putIsLValueDecor(ctx, lvalue);
   DEBUG_EXIT();
   return 0;
 }
@@ -311,12 +357,13 @@ antlrcpp::Any TypeCheckVisitor::visitIndexing(AslParser::IndexingContext *ctx) {
     Errors.nonArrayInArrayAccess(ctx);
     t = Types.createErrorTy();
   }
-  else
+  else if (Types.isArrayTy(t1))
     t = Types.getArrayElemType(t1);
+  else
+    t = Types.createErrorTy();
   
-  bool lvalue = getIsLValueDecor(ctx->expr(0));
   putTypeDecor(ctx, t);
-  putIsLValueDecor(ctx, lvalue);
+  putIsLValueDecor(ctx, false);
 
   DEBUG_EXIT();
   return 0;
@@ -329,7 +376,10 @@ antlrcpp::Any TypeCheckVisitor::visitUnary(AslParser::UnaryContext *ctx) {
 
   if (not Types.isErrorTy(t) and ((ctx->NOT() and not Types.isBooleanTy(t)) or
                                   (not ctx->NOT() and not Types.isNumericTy(t))))
+  {
     Errors.incompatibleOperator(ctx->op);
+    t = Types.createErrorTy();
+  }
   
   putTypeDecor(ctx, t);
   putIsLValueDecor(ctx, false);
@@ -407,9 +457,8 @@ antlrcpp::Any TypeCheckVisitor::visitNested(AslParser::NestedContext *ctx)
   DEBUG_ENTER();
   visit(ctx->expr());
   TypesMgr::TypeId t = getTypeDecor(ctx->expr());
-  bool lvalue = getIsLValueDecor(ctx->expr());
   putTypeDecor(ctx, t);
-  putIsLValueDecor(ctx, lvalue);
+  putIsLValueDecor(ctx, false);
   DEBUG_EXIT();
   return 0;
 }
@@ -444,8 +493,7 @@ antlrcpp::Any TypeCheckVisitor::visitExprIdent(AslParser::ExprIdentContext *ctx)
   visit(ctx->ident());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
   putTypeDecor(ctx, t1);
-  bool b = getIsLValueDecor(ctx->ident());
-  putIsLValueDecor(ctx, b);
+  putIsLValueDecor(ctx, false);
   DEBUG_EXIT();
   return 0;
 }
@@ -467,10 +515,10 @@ antlrcpp::Any TypeCheckVisitor::visitIdent(AslParser::IdentContext *ctx) {
     else
       putIsLValueDecor(ctx, true);
   }
+
   DEBUG_EXIT();
   return 0;
 }
-
 
 // Getters for the necessary tree node atributes:
 //   Scope, Type ans IsLValue

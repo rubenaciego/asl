@@ -78,6 +78,7 @@ public:
   // antlrcpp::Any visitWriteString(AslParser::WriteStringContext *ctx);
   antlrcpp::Any visitLeftIdent(AslParser::LeftIdentContext *ctx);
   antlrcpp::Any visitLeftIndexing(AslParser::LeftIndexingContext *ctx);
+  antlrcpp::Any visitLeftNested(AslParser::LeftNestedContext *ctx);
   antlrcpp::Any visitExprIdent(AslParser::ExprIdentContext *ctx);
   antlrcpp::Any visitIndexing(AslParser::IndexingContext *ctx);
   antlrcpp::Any visitUnary(AslParser::UnaryContext *ctx);

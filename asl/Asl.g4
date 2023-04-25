@@ -38,15 +38,19 @@ program : function+ EOF
 
 // A function has a name, a list of parameters and a list of statements
 function
-        : FUNC ID '(' (params+=variable_decl (',' params+=variable_decl)*)? ')' (':' type)? declarations statements ENDFUNC
+        : FUNC ID '(' (params+=param_decl (',' params+=param_decl)*)? ')' (':' basic_type)? declarations statements ENDFUNC
         ;
 
 declarations
-        : (VAR variable_decl)*
+        : (variable_decl)*
         ;
 
 variable_decl
-        : ID (',' ID)* ':' type
+        : VAR ID (',' ID)* ':' type
+        ;
+
+param_decl
+        : ID ':' type
         ;
 
 type    : basic_type
@@ -59,7 +63,7 @@ basic_type
         | BOOL
         | CHAR
         ;
-array   : ARRAY INTVAL 'of' basic_type
+array   : ARRAY '[' INTVAL ']' 'of' basic_type
         ;
 
 statements
@@ -75,7 +79,7 @@ statement
           // while-do-endwhile statement
         | WHILE expr DO statements ENDWHILE   # whileStmt
           // A function/procedure call has a list of arguments in parenthesis (possibly empty)
-        | ident '(' (expr (',' expr)*)? ')' ';'                   # procCall
+        | ident '(' (expr (',' expr)*)? ')' ';'                                  # procCall
           // Read a variable
         | READ left_expr ';'                  # readStmt
           // Write an expression
@@ -90,6 +94,7 @@ statement
 left_expr
         : ident                               # leftIdent
         | left_expr '[' expr ']'              # leftIndexing
+        | '(' left_expr ')'                   # leftNested
         ;
 
 // Grammar for expressions with boolean, relational and aritmetic operators
