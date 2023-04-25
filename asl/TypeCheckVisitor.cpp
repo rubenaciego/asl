@@ -179,6 +179,27 @@ antlrcpp::Any TypeCheckVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
   return 0;
 }
 
+antlrcpp::Any TypeCheckVisitor::visitFunCall(AslParser::FunCallContext *ctx)
+{
+  DEBUG_ENTER();
+  visit(ctx->ident());
+  TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
+  TypesMgr::TypeId t = Types.createErrorTy();
+  if (Types.isErrorTy(t1)) {
+    ;
+  } else if (not Types.isFunctionTy(t1)) {
+    Errors.isNotCallable(ctx->ident());
+  }
+  else {
+    t = Types.getFuncReturnType(t1);
+  }
+
+  putTypeDecor(ctx, t);
+  putIsLValueDecor(ctx, false);
+  DEBUG_EXIT();
+  return 0;
+}
+
 antlrcpp::Any TypeCheckVisitor::visitReadStmt(AslParser::ReadStmtContext *ctx) {
   DEBUG_ENTER();
   visit(ctx->left_expr());

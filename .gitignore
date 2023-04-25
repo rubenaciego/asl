@@ -1,3 +1,16 @@
+.vscode
+asl/Asl.interp
+asl/Asl.tokens
+asl/AslBaseVisitor.cpp
+asl/AslBaseVisitor.h
+asl/AslLexer.cpp
+asl/AslLexer.h
+asl/AslLexer.interp
+asl/AslLexer.tokens
+asl/AslParser.cpp
+asl/AslParser.h
+asl/AslVisitor.cpp
+asl/AslVisitor.h
 asl/.antlr
 asl/_antlr
 asl/asl

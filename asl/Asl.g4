@@ -103,6 +103,7 @@ expr    : expr '[' expr ']'                   # indexing
         | expr op=AND expr                    # logical
         | expr op=OR expr                     # logical
         | '(' expr ')'                        # nested
+        | ident '(' (expr (',' expr)*)? ')'   # funCall
         | INTVAL                              # value
         | FLOATVAL                            # value
         | BOOLVAL                             # value
