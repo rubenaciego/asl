@@ -203,7 +203,7 @@ antlrcpp::Any TypeCheckVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
     Errors.isNotCallable(ctx->ident());
   }
   else {
-    visitParameters(ctx->expr(), t1, ctx);
+    visitParameters(ctx->expr(), t1, ctx, ctx->ident());
   }
   DEBUG_EXIT();
   return 0;
@@ -228,7 +228,7 @@ antlrcpp::Any TypeCheckVisitor::visitFunCall(AslParser::FunCallContext *ctx)
     }
     else t = Types.getFuncReturnType(t1);
 
-    visitParameters(ctx->expr(), t1, ctx);
+    visitParameters(ctx->expr(), t1, ctx, ctx->ident());
   }
 
   putTypeDecor(ctx, t);
@@ -238,13 +238,13 @@ antlrcpp::Any TypeCheckVisitor::visitFunCall(AslParser::FunCallContext *ctx)
 }
 
 antlrcpp::Any TypeCheckVisitor::visitParameters(const std::vector<AslParser::ExprContext*>& params,
-  TypesMgr::TypeId ftype, antlr4::ParserRuleContext* ctx)
+  TypesMgr::TypeId ftype, antlr4::ParserRuleContext* ctx, AslParser::IdentContext* ident)
 {
   DEBUG_ENTER();
   const std::vector<TypesMgr::TypeId>& paramTypes = Types.getFuncParamsTypes(ftype);
 
   if (paramTypes.size() != params.size())
-    Errors.numberOfParameters(ctx);
+    Errors.numberOfParameters(ident);
   else
   {
     for (size_t i = 0; i < params.size(); ++i)

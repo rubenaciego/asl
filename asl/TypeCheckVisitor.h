@@ -90,7 +90,7 @@ public:
   antlrcpp::Any visitIdent(AslParser::IdentContext *ctx);
 
   antlrcpp::Any visitParameters(const std::vector<AslParser::ExprContext*>& params,
-    TypesMgr::TypeId ftype, antlr4::ParserRuleContext* ctx);
+    TypesMgr::TypeId ftype, antlr4::ParserRuleContext* ctx, AslParser::IdentContext* ident);
 
 private:
 
