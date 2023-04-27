@@ -362,8 +362,9 @@ antlrcpp::Any TypeCheckVisitor::visitIndexing(AslParser::IndexingContext *ctx) {
   else
     t = Types.createErrorTy();
   
+  bool lvalue = getIsLValueDecor(ctx->expr(0));
   putTypeDecor(ctx, t);
-  putIsLValueDecor(ctx, false);
+  putIsLValueDecor(ctx, lvalue);
 
   DEBUG_EXIT();
   return 0;
@@ -457,8 +458,9 @@ antlrcpp::Any TypeCheckVisitor::visitNested(AslParser::NestedContext *ctx)
   DEBUG_ENTER();
   visit(ctx->expr());
   TypesMgr::TypeId t = getTypeDecor(ctx->expr());
+  bool lvalue = getIsLValueDecor(ctx->expr());
   putTypeDecor(ctx, t);
-  putIsLValueDecor(ctx, false);
+  putIsLValueDecor(ctx, lvalue);
   DEBUG_EXIT();
   return 0;
 }
@@ -492,8 +494,9 @@ antlrcpp::Any TypeCheckVisitor::visitExprIdent(AslParser::ExprIdentContext *ctx)
   DEBUG_ENTER();
   visit(ctx->ident());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
+  bool lvalue = getIsLValueDecor(ctx->ident());
   putTypeDecor(ctx, t1);
-  putIsLValueDecor(ctx, false);
+  putIsLValueDecor(ctx, lvalue);
   DEBUG_EXIT();
   return 0;
 }

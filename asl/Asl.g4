@@ -92,9 +92,9 @@ statement
 
 // Grammar for left expressions (l-values in C++)
 left_expr
-        : ident                               # leftIdent
-        | left_expr '[' expr ']'              # leftIndexing
+        : left_expr '[' expr ']'              # leftIndexing
         | '(' left_expr ')'                   # leftNested
+        | ident                               # leftIdent
         ;
 
 // Grammar for expressions with boolean, relational and aritmetic operators
