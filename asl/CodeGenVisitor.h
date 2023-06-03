@@ -75,11 +75,15 @@ public:
   antlrcpp::Any visitReadStmt(AslParser::ReadStmtContext *ctx);
   antlrcpp::Any visitWriteExpr(AslParser::WriteExprContext *ctx);
   antlrcpp::Any visitWriteString(AslParser::WriteStringContext *ctx);
-  antlrcpp::Any visitLeftIdent(AslParser::LeftIdentContext *ctx);
   //antlrcpp::Any visitLeftIndexing(AslParser::LeftIndexingContext *ctx);
+  antlrcpp::Any visitLeftNested(AslParser::LeftNestedContext *ctx);
+  antlrcpp::Any visitLeftIdent(AslParser::LeftIdentContext *ctx);
+  antlrcpp::Any visitNested(AslParser::NestedContext *ctx);
   antlrcpp::Any visitExprIdent(AslParser::ExprIdentContext *ctx);
   antlrcpp::Any visitArithmetic(AslParser::ArithmeticContext *ctx);
+  antlrcpp::Any visitUnary(AslParser::UnaryContext *ctx);
   antlrcpp::Any visitRelational(AslParser::RelationalContext *ctx);
+  antlrcpp::Any visitLogical(AslParser::LogicalContext *ctx);
   antlrcpp::Any visitValue(AslParser::ValueContext *ctx);
   antlrcpp::Any visitIdent(AslParser::IdentContext *ctx);
 
