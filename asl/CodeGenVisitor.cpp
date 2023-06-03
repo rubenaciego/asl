@@ -678,6 +678,13 @@ antlrcpp::Any CodeGenVisitor::visitExprIdent(AslParser::ExprIdentContext *ctx) {
 antlrcpp::Any CodeGenVisitor::visitIdent(AslParser::IdentContext *ctx) {
   DEBUG_ENTER();
   CodeAttribs codAts(ctx->ID()->getText(), "", instructionList());
+  TypesMgr::TypeId t = getTypeDecor(ctx);
+  if (Types.isArrayTy(t) && Symbols.isParameterClass(ctx->ID()->getText()))
+  {
+	  std::string temp = "%"+codeCounters.newTEMP();
+	  codAts.code = codAts.code || instruction::LOAD(temp, codAts.addr);
+	  codAts.addr = temp;
+  }
   DEBUG_EXIT();
   return codAts;
 }
