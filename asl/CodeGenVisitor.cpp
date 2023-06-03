@@ -371,11 +371,29 @@ antlrcpp::Any CodeGenVisitor::visitReadStmt(AslParser::ReadStmtContext *ctx) {
   DEBUG_ENTER();
   CodeAttribs     && codAtsE = visit(ctx->left_expr());
   std::string          addr1 = codAtsE.addr;
-  // std::string          offs1 = codAtsE.offs;
+  std::string          offs1 = codAtsE.offs;
   instructionList &    code1 = codAtsE.code;
   instructionList &     code = code1;
-  // TypesMgr::TypeId tid1 = getTypeDecor(ctx->left_expr());
-  code = code1 || instruction::READI(addr1);
+  TypesMgr::TypeId tid1 = getTypeDecor(ctx->left_expr());
+  std::string temp = (offs1 != "") ? ("%"+codeCounters.newTEMP()) : addr1;
+
+  if (Types.isFloatTy(tid1)) code = code1 || instruction::READF(temp);
+  else if (Types.isCharacterTy(tid1)) code = code1 || instruction::READC(temp);
+  else if (Types.isIntegerTy(tid1)) code = code1 || instruction::READI(temp);
+  else if (Types.isBooleanTy(tid1))
+  {
+    std::string t0 = "%"+codeCounters.newTEMP();
+    std::string t1 = "%"+codeCounters.newTEMP();
+    std::string t2 = "%"+codeCounters.newTEMP();
+    code = code1 || instruction::READI(t1) ||
+           instruction::LOAD(t0, "0") ||
+           instruction::EQ(t2, t1, t0) ||
+           instruction::NOT(temp, t2);
+  }
+  
+  if (offs1 != "")
+    code = code || instruction::XLOAD(addr1, offs1, temp);
+
   DEBUG_EXIT();
   return code;
 }
