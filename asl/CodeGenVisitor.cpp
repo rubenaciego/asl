@@ -165,6 +165,25 @@ antlrcpp::Any CodeGenVisitor::visitIfStmt(AslParser::IfStmtContext *ctx) {
   return code;
 }
 
+antlrcpp::Any CodeGenVisitor::visitWhileStmt(AslParser::WhileStmtContext *ctx)
+{
+  DEBUG_ENTER();
+  instructionList code;
+  CodeAttribs     && codAtsE = visit(ctx->expr());
+  std::string          addr1 = codAtsE.addr;
+  instructionList &    code1 = codAtsE.code;
+  instructionList &&   code2 = visit(ctx->statements());
+  std::string label = codeCounters.newLabelWHILE();
+  std::string labelBeginWhile = "beginwhile"+label;
+  std::string labelEndWhile = "endwhile"+label;
+  code = instruction::LABEL(labelBeginWhile) ||
+         code1 || instruction::FJUMP(addr1, labelEndWhile) ||
+         code2 || instruction::UJUMP(labelBeginWhile) ||
+         instruction::LABEL(labelEndWhile);
+  DEBUG_EXIT();
+  return code;
+}
+
 antlrcpp::Any CodeGenVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
   DEBUG_ENTER();
   instructionList code;
@@ -410,7 +429,15 @@ antlrcpp::Any CodeGenVisitor::visitValue(AslParser::ValueContext *ctx) {
   DEBUG_ENTER();
   instructionList code;
   std::string temp = "%"+codeCounters.newTEMP();
-  code = instruction::ILOAD(temp, ctx->getText());
+  
+  if (ctx->CHARVAL()) code = instruction::CHLOAD(temp, ctx->getText().substr(1, ctx->getText().size() - 2));
+  else if (ctx->FLOATVAL()) code = instruction::FLOAD(temp, ctx->getText());
+  else if (ctx->BOOLVAL()) {
+    if (ctx->getText() == "true") code = instruction::ILOAD(temp, "1");
+    else code = instruction::ILOAD(temp, "0");
+  }
+  else code = instruction::ILOAD(temp, ctx->getText());
+
   CodeAttribs codAts(temp, "", code);
   DEBUG_EXIT();
   return codAts;
