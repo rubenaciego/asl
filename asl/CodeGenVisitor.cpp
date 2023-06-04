@@ -38,8 +38,6 @@
 #include <string>
 #include <cstddef>    // std::size_t
 
-#include <typeinfo>
-
 // uncomment the following line to enable debugging messages with DEBUG*
 // #define DEBUG_BUILD
 #include "../common/debug.h"
